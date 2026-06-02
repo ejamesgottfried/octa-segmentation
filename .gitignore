@@ -1,0 +1,16 @@
+# ignore data
+rose1_data/
+
+# ignore weights
+*.pth
+*.pt
+
+# ignore genrated images
+results/*.png
+results/*.jpg
+
+__pycache__/
+
+# ignore jupter notebooks autosaves
+.ipynb_checkpoints/
+
