@@ -26,9 +26,9 @@ def adaptive_threshold(img):
     
     max_val = 255
 
-    block_size = 11 # change?
+    block_size = 71 # change?
 
-    offset_c = 2 # change?
+    offset_c = -30 # change?
 
     imgThresh = cv.adaptiveThreshold(img, max_val, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block_size, offset_c)
 
