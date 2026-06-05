@@ -85,7 +85,10 @@ def run_classical_baselines(img_dir, gt_dir):
     gt_dir = Path(gt_dir)
     
     # Get all image paths
+    # Try tif first, fall back to png
     img_paths = sorted(img_dir.glob("*.tif"))
+    if len(img_paths) == 0:
+        img_paths = sorted(img_dir.glob("*.png"))
     
     # Store results for each method
     results = {
