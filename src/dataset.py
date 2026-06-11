@@ -59,6 +59,9 @@ class ROSEDataset(Dataset):
 def get_kfold_splits(img_paths, mask_paths, n_splits=5, test_size=0.2, random_state=42):
     """
     Split dataset into test set and k-fold train/val splits.
+
+    for rose-1: 9 image test set
+    24 train, 6 val for each fold
     
     Args:
         img_paths: list of image paths
