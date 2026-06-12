@@ -35,66 +35,55 @@ class ROSEDataset(Dataset):
         ])
 
     def __len__(self):
-        return len(self.img_paths)
+        return len(self.img_path)
     
     def __getitem__(self, idx):
-
-        # load and convert image to numpy array
-        img = cv2.imread(str(self.img_path[idx]), cv2.IMREAD_GRAYSCALE) 
+        img = cv2.imread(str(self.img_path[idx]), cv2.IMREAD_GRAYSCALE)
         mask = cv2.imread(str(self.mask_path[idx]), cv2.IMREAD_GRAYSCALE)
 
         if img is None or mask is None:
             raise ValueError(f"Failed to load image or mask at index {idx}")
 
+        # Binarize mask to 0/1 (cv2 loads it as 0/255)
+        mask = (mask > 127).astype(np.float32)
 
         if self.augment:
-            transformed = self.train_transform(image = img, mask = mask)
-        else: 
-            transformed = self.val_transform(image = img, mask = mask)
+            transformed = self.train_transform(image=img, mask=mask)
+        else:
+            transformed = self.val_transform(image=img, mask=mask)
 
-        return transformed['image'], transformed['mask']
+        image = transformed['image']
+        mask = transformed['mask']
+
+        # Ensure mask is float with a channel dimension: (1, H, W)
+        mask = mask.unsqueeze(0).float()
+
+        return image, mask
     
 
     
-def get_kfold_splits(img_paths, mask_paths, n_splits=5, test_size=0.2, random_state=42):
+def get_kfold_splits(train_img_paths, train_mask_paths,
+                     test_img_paths, test_mask_paths,
+                     n_splits=5, random_state=42):
     """
-    Split dataset into test set and k-fold train/val splits.
+    Apply k-fold cross validation to a pre-split dataset.
+    Uses ROSE-1's existing train/test split.
 
-    for rose-1: 9 image test set
-    24 train, 6 val for each fold
-    
-    Args:
-        img_paths: list of image paths
-        mask_paths: list of mask paths
-        n_splits: number of folds (default 5)
-        test_size: fraction for test set (default 0.2)
-        random_state: random seed for reproducibility
-    
-    Returns:
-        dictionary with test set and k fold splits
+    For ROSE-1 SVC: 30 train images → 5 folds of 24 train / 6 val.
+                    9 test images held out (passed through unchanged).
     """
-    # First split off test set
-    train_val_imgs, test_imgs, train_val_masks, test_masks = train_test_split(
-        img_paths, mask_paths,
-        test_size=test_size,
-        random_state=random_state
-    )
-    
-    # Apply k-fold to remaining training/validation data
     kfold = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-    
+
     folds = []
-    for train_idx, val_idx in kfold.split(train_val_imgs):
-        # Get paths for this fold
-        train_imgs = [train_val_imgs[i] for i in train_idx]
-        train_masks = [train_val_masks[i] for i in train_idx]
-        val_imgs = [train_val_imgs[i] for i in val_idx]
-        val_masks = [train_val_masks[i] for i in val_idx]
-        
+    for train_idx, val_idx in kfold.split(train_img_paths):
+        train_imgs = [train_img_paths[i] for i in train_idx]
+        train_masks = [train_mask_paths[i] for i in train_idx]
+        val_imgs = [train_img_paths[i] for i in val_idx]
+        val_masks = [train_mask_paths[i] for i in val_idx]
         folds.append((train_imgs, train_masks, val_imgs, val_masks))
-    
+
     return {
-        'test': (test_imgs, test_masks),
+        'test': (test_img_paths, test_mask_paths),
         'folds': folds
     }
 
