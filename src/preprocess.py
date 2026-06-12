@@ -75,14 +75,3 @@ if __name__ == "__main__":
             input_dir=ROSE1_BASE / f"SVC/{split}/img",
             output_dir=Path(f"/users/egottfri/code/octa-segmentation/data/preprocessed/SVC/{split}/img")
         )
-    
-    # Add preprocessing for SVC_DVC later?
-    if __name__ == "__main__":
-        ROSE1_BASE = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/rose_dataset/ROSE-1")
-    
-    for layer in ["SVC", "DVC", "SVC_DVC"]:
-        for split in ["train", "test"]:
-            preprocess_directory(
-                input_dir=ROSE1_BASE / f"{layer}/{split}/img",
-                output_dir=Path(f"/users/egottfri/code/octa-segmentation/data/preprocessed/{layer}/{split}/img")
-            )
