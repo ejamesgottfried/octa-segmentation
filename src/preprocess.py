@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 
-def apply_clahe(img, clip_limit=2.0, tile_size=8):
+def apply_clahe(img, clip_limit=2.0, tile_size=4):
     """
     Use clahe: Contrast Limited Adaptive Histogram Equalization
     Makes subtle features more visibile

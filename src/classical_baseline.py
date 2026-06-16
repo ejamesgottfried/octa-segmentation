@@ -2,143 +2,87 @@ import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
 from pathlib import Path
-from evaluate import dice, iou, sensitivity, specificity, precision, evaluate
+import itertools
+from sklearn.model_selection import KFold
+from evaluate import dice, evaluate
 
-# Classical baseline methods for OCTA vessel segmentation
-# Methods: global thresholding, adaptive thresholding, morphological operations
-# These serve as a performance baseline to compare against deep learning approaches
 
 def global_threshold(img):
+    """Otsu's global thresholding."""
+    _, out = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    return out
+
+
+def adaptive_threshold(img, block_size=71, offset_c=-30):
+    """Adaptive Gaussian threshold. Parameters tunable for grid search."""
+    return cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                cv.THRESH_BINARY, block_size, offset_c)
+
+
+def morphological_post_process(img, kernel_size=3):
+    """Morphological closing with elliptical kernel."""
+    kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (kernel_size, kernel_size))
+    return cv.morphologyEx(img, cv.MORPH_CLOSE, kernel, iterations=1)
+
+
+def apply_preprocessing(img, clip=2.0, tile=4, median_kernel=3):
+    """CLAHE + median filter."""
+    clahe = cv.createCLAHE(clipLimit=clip, tileGridSize=(tile, tile))
+    out = clahe.apply(img)
+    out = cv.medianBlur(out, median_kernel)
+    return out
+
+
+def segment_adaptive(img, block_size, offset_c, clip=None, tile=None, use_morph=True):
     """
-    Apply Otsu's global thresholding to segment vessels.
-    Otsu's finds optimal threshold using image intensity histogram, maximizing between-class variance.
+    Full adaptive pipeline with optional preprocessing.
+    If clip/tile given, applies CLAHE+median first.
     """
-    # Otsu's automatically finds best threshold value
-    thresh_value, imgThresh = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-    
-    return imgThresh
+    proc = img
+    if clip is not None:
+        proc = apply_preprocessing(proc, clip, tile)
+    pred = adaptive_threshold(proc, block_size, offset_c)
+    if use_morph:
+        pred = morphological_post_process(pred)
+    return pred
 
-def adaptive_threshold(img):
+
+def cv_grid_search(img_paths, mask_paths, block_sizes, c_values,
+                   clip=None, tile=None, n_splits=5, random_state=42):
     """
-    Apply adaptive thresholding. Later, I will sweep values to find best block_size and offset_c
-    Using Gaussian Thresholding rather than mean, which weights closer pixels heavier.
+    Cross-validated grid search over adaptive threshold params on training data.
+    Returns (best_block, best_C, results_list).
     """
-    
-    max_val = 255
+    img_paths, mask_paths = list(img_paths), list(mask_paths)
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
-    block_size = 71 # change?
+    results = []
+    for block, C in itertools.product(block_sizes, c_values):
+        fold_scores = []
+        for _, val_idx in kf.split(img_paths):
+            vs = []
+            for i in val_idx:
+                img = cv.imread(str(img_paths[i]), cv.IMREAD_GRAYSCALE)
+                gt = cv.imread(str(mask_paths[i]), cv.IMREAD_GRAYSCALE)
+                pred = segment_adaptive(img, block, C, clip, tile)
+                vs.append(dice(pred, gt))
+            fold_scores.append(np.mean(vs))
+        results.append({'block_size': block, 'C': C,
+                        'dice': np.mean(fold_scores), 'std': np.std(fold_scores)})
 
-    offset_c = -30 # change?
-
-    imgThresh = cv.adaptiveThreshold(img, max_val, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block_size, offset_c)
-
-    return imgThresh
-
-def morphological_post_process(img):
-    """
-    Apply morphological operations to threshold outputs
-    Use closing (dilation -> erosion) for now, but test others later
-    """
-    # test other kernel sizes later. ellipse works best for octa images?
-    kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3,3))
-
-    closed = cv.morphologyEx(img, cv.MORPH_CLOSE, kernel, iterations = 1)
-
-    return closed
+    best = max(results, key=lambda r: r['dice'])
+    return best['block_size'], best['C'], results
 
 
-
-
-
-def visualize_results(img, gt, pred, title=""):
-    """Display original image, ground truth, and prediction side by side."""
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    
-    axes[0].imshow(img, cmap='gray')
-    axes[0].set_title("Original Image")
-    axes[0].axis('off')
-    
-    axes[1].imshow(gt, cmap='gray')
-    axes[1].set_title("Ground Truth")
-    axes[1].axis('off')
-    
-    axes[2].imshow(pred, cmap='gray')
-    axes[2].set_title(f"Prediction: {title}")
-    axes[2].axis('off')
-    
-    plt.tight_layout()
-    plt.show()
-
-
-def run_classical_baselines(img_dir, gt_dir):
-    """
-    Run all classical baseline methods on a directory of images.
-    
-    Args:
-        img_dir: path to directory containing OCTA images
-        gt_dir: path to directory containing ground truth masks
-    
-    Returns:
-        dictionary of results for each method
-    """
-    img_dir = Path(img_dir)
-    gt_dir = Path(gt_dir)
-    
-    # Get all image paths
-    # Try tif first, fall back to png
-    img_paths = sorted(img_dir.glob("*.tif"))
-    if len(img_paths) == 0:
-        img_paths = sorted(img_dir.glob("*.png"))
-    
-    # Store results for each method
-    results = {
-        'global': [],
-        'global_morph': [],
-        'adaptive': [],
-        'adaptive_morph': [],
-    }
-    
-    for img_path in img_paths:
-        # Load image and ground truth
+def evaluate_on_test(img_paths, mask_paths, block_size, offset_c,
+                     clip=None, tile=None, use_morph=True):
+    """Apply locked params to a test set, return (mean_metrics, std_metrics)."""
+    metrics = []
+    for img_path, mask_path in zip(img_paths, mask_paths):
         img = cv.imread(str(img_path), cv.IMREAD_GRAYSCALE)
-        gt = cv.imread(str(gt_dir / img_path.name), cv.IMREAD_GRAYSCALE)
-        
-        # Run each method
-        global_pred = global_threshold(img)
-        adaptive_pred = adaptive_threshold(img)
-        
-        # Run with and without morphology
-        global_morph_pred = morphological_post_process(global_pred)
-        adaptive_morph_pred = morphological_post_process(adaptive_pred)
-        
-        # Evaluate each method
-        results['global'].append(evaluate(global_pred, gt))
-        results['global_morph'].append(evaluate(global_morph_pred, gt))
-        results['adaptive'].append(evaluate(adaptive_pred, gt))
-        results['adaptive_morph'].append(evaluate(adaptive_morph_pred, gt))
-    
-    # Average results across all images
-    summary = {}
-    for method, method_results in results.items():
-        summary[method] = {
-            metric: np.mean([r[metric] for r in method_results])
-            for metric in method_results[0].keys()
-        }
-    
-    return summary
-
-
-# call on the rose-1 dataset
-if __name__ == "__main__":
-
-    ROSE1_BASE = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/rose_dataset/ROSE-1")
-
-    results = run_classical_baselines(
-        img_dir=ROSE1_BASE / "SVC/train/img",
-        gt_dir=ROSE1_BASE / "SVC/train/gt"
-    )
-
-    for method, metrics in results.items():
-        print(f"\n{method}:")
-        for metric, value in metrics.items():
-            print(f"  {metric}: {value:.4f}")
+        gt = cv.imread(str(mask_path), cv.IMREAD_GRAYSCALE)
+        pred = segment_adaptive(img, block_size, offset_c, clip, tile, use_morph)
+        metrics.append(evaluate(pred, gt))
+    mean = {k: np.mean([m[k] for m in metrics]) for k in metrics[0]}
+    std = {k: np.std([m[k] for m in metrics]) for k in metrics[0]}
+    return mean, std
