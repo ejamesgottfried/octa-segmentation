@@ -102,9 +102,9 @@ def create_datasets(fold, test_split):
     train_imgs, train_masks, val_imgs, val_masks = fold
     test_imgs, test_masks = test_split
     
-    train_dataset = ROSEDataset(train_imgs, train_masks, augment=True)
-    val_dataset = ROSEDataset(val_imgs, val_masks, augment=False)
-    test_dataset = ROSEDataset(test_imgs, test_masks, augment=False)
+    train_dataset = OCTADataset(train_imgs, train_masks, augment=True)
+    val_dataset = OCTADataset(val_imgs, val_masks, augment=False)
+    test_dataset = OCTADataset(test_imgs, test_masks, augment=False)
     
     return train_dataset, val_dataset, test_dataset
 
