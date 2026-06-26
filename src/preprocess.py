@@ -46,6 +46,8 @@ def preprocess_directory(input_dir, output_dir, clip_limit=2.0, tile_size=8, ker
     img_paths = sorted(input_dir.glob("*.tif"))
     if len(img_paths) == 0:
         img_paths = sorted(input_dir.glob("*.png"))
+    if len(img_paths) == 0:
+        img_paths = sorted(input_dir.glob("*.bmp"))
     
     print(f"Processing {len(img_paths)} images from {input_dir.name}...")
     

@@ -7,7 +7,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from sklearn.model_selection import train_test_split, KFold
 
-class ROSEDataset(Dataset):
+class OCTADataset(Dataset):
     def __init__(self, img_paths, mask_paths, augment=False):
         # store image and mask paths
         # store augmentation flag
