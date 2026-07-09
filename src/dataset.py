@@ -108,4 +108,19 @@ def create_datasets(fold, test_split):
     
     return train_dataset, val_dataset, test_dataset
 
+def get_octa500_split(test_size=40, random_state=42):
+    """
+    OCTA-500 3mm split (capillary GT). 
+    Every notebook uses the SAME held-out test set. 
+    Returns four lists of Path: train_imgs, train_masks, test_imgs, test_masks
+    """
+    base   = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/OCTA_500")
+    proj   = base / "OCTA_3mm/Projection Maps/OCTA(ILM_OPL)"
+    labels = base / "Label/Label/GT_Capillary"
+    ids   = [str(i) for i in range(10301, 10501)]
+    imgs  = [proj   / f"{i}.bmp" for i in ids]
+    masks = [labels / f"{i}.bmp" for i in ids]
+    train_imgs, test_imgs, train_masks, test_masks = train_test_split(
+        imgs, masks, test_size=test_size, random_state=random_state)
+    return train_imgs, train_masks, test_imgs, test_masks
 
