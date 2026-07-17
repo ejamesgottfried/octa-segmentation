@@ -1,7 +1,7 @@
 import sys
 sys.path.append('/users/egottfri/code/octa-segmentation/src')
 from evaluate import evaluate   # your existing metrics module
-from model import UNet
+from model import build_model
 from dataset import ROSEDataset
 from torch.utils.data import DataLoader
 import torch
@@ -19,9 +19,10 @@ def evaluate_on_test(test_imgs, test_masks, model_paths, device='cuda'):
     all_fold_metrics = []
 
     for fold_idx, model_path in enumerate(model_paths):
-        # Load this fold's best model
-        model = UNet(in_channels=1, num_classes=1).to(device)
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        # Load this fold's best model, rebuilt from the checkpoint's own metadata
+        checkpoint = torch.load(model_path, map_location=device)
+        model = build_model(checkpoint['model_name'], **checkpoint['model_kwargs']).to(device)
+        model.load_state_dict(checkpoint['state_dict'])
         model.eval()
 
         fold_metrics = []

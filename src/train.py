@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from model import UNet
+from model import build_model
 from dataset import get_kfold_splits, create_datasets
 from plotting import plot_training_curves
 from torch.utils.data import DataLoader
@@ -122,12 +122,14 @@ def validate(model, loader, loss_fn, device):
     return avg_loss, avg_dice
 
 def train_fold(model, train_loader, val_loader, loss_fn, optimizer, device,
+               model_name, model_kwargs=None,
                num_epochs=100, patience=10, save_path="best_model.pth"):
     """
     Train a model on one fold with early stopping.
     Saves the best model (by validation Dice) to save_path.
     Returns the best validation Dice achieved.
     """
+    model_kwargs = model_kwargs or {}
     best_val_dice = 0.0
     epochs_without_improvement = 0
 
@@ -160,7 +162,11 @@ def train_fold(model, train_loader, val_loader, loss_fn, optimizer, device,
         if val_dice > best_val_dice:
             best_val_dice = val_dice
             epochs_without_improvement = 0
-            torch.save(model.state_dict(), save_path)  # save best weights
+            torch.save({
+                'model_name': model_name,
+                'model_kwargs': model_kwargs,
+                'state_dict': model.state_dict(),
+            }, save_path)  # save best weights + how to rebuild the model
             print(f"New best! Saved (val_dice: {val_dice:.4f})")
         else:
             epochs_without_improvement += 1
@@ -172,6 +178,7 @@ def train_fold(model, train_loader, val_loader, loss_fn, optimizer, device,
 
 
 def run_kfold(train_imgs, train_masks, test_imgs, test_masks,
+              model_name='unet', model_kwargs=None,
               n_splits=5, num_epochs=100, patience=10, batch_size=4,
               lr=1e-4, device='cuda', output_dir='results'):
     """
@@ -181,6 +188,8 @@ def run_kfold(train_imgs, train_masks, test_imgs, test_masks,
     """
     import os
     os.makedirs(output_dir, exist_ok=True)
+
+    model_kwargs = model_kwargs or {'in_channels': 1, 'num_classes': 1}
 
     # Get the fold splits (test set held out, 5 folds on training data)
     splits = get_kfold_splits(train_imgs, train_masks, test_imgs, test_masks,
@@ -201,7 +210,7 @@ def run_kfold(train_imgs, train_masks, test_imgs, test_masks,
         val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
         # Fresh model & optimizer for each fold
-        model = UNet(in_channels=1, num_classes=1).to(device)
+        model = build_model(model_name, **model_kwargs).to(device)
         loss_fn = CombinedLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -209,6 +218,7 @@ def run_kfold(train_imgs, train_masks, test_imgs, test_masks,
         save_path = f"{output_dir}/best_model_fold{fold_idx+1}.pth"
         best_dice, history = train_fold(
             model, train_loader, val_loader, loss_fn, optimizer, device,
+            model_name=model_name, model_kwargs=model_kwargs,
             num_epochs=num_epochs, patience=patience, save_path=save_path
         )
 
@@ -252,8 +262,11 @@ if __name__ == "__main__":
     print(f"Test images: {len(test_imgs)}, Test masks: {len(test_masks)}")
 
     # Run k-fold training
+    model_name = 'unet'
     fold_scores = run_kfold(
         train_imgs, train_masks, test_imgs, test_masks,
+        model_name=model_name,
+        model_kwargs={'in_channels': 1, 'num_classes': 1},
         n_splits=5,
         num_epochs=100,
         patience=10,
