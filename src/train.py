@@ -243,20 +243,29 @@ def run_kfold(train_imgs, train_masks, test_imgs, test_masks,
 # to run:
 if __name__ == "__main__":
     from pathlib import Path
+    from dataset import get_octa500_split
 
     # use GPU if available
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
-    # Data paths (preprocessed SVC on Oscar)
-    PREP_BASE = Path("/users/egottfri/code/octa-segmentation/data/preprocessed")
-    ROSE1_BASE = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/rose_dataset/ROSE-1")
+    # Which dataset to train on: 'rose1' or 'octa500'
+    dataset_name = 'rose1'
 
-    # Preprocessed images, original ground truth masks
-    train_imgs = sorted((PREP_BASE / "SVC/train/img").glob("*.tif"))
-    train_masks = sorted((ROSE1_BASE / "SVC/train/gt").glob("*.tif"))
-    test_imgs = sorted((PREP_BASE / "SVC/test/img").glob("*.tif"))
-    test_masks = sorted((ROSE1_BASE / "SVC/test/gt").glob("*.tif"))
+    if dataset_name == 'rose1':
+        # Data paths (preprocessed SVC on Oscar)
+        PREP_BASE = Path("/users/egottfri/code/octa-segmentation/data/preprocessed")
+        ROSE1_BASE = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/rose_dataset/ROSE-1")
+
+        # Preprocessed images, original ground truth masks
+        train_imgs = sorted((PREP_BASE / "SVC/train/img").glob("*.tif"))
+        train_masks = sorted((ROSE1_BASE / "SVC/train/gt").glob("*.tif"))
+        test_imgs = sorted((PREP_BASE / "SVC/test/img").glob("*.tif"))
+        test_masks = sorted((ROSE1_BASE / "SVC/test/gt").glob("*.tif"))
+    elif dataset_name == 'octa500':
+        train_imgs, train_masks, test_imgs, test_masks = get_octa500_split()
+    else:
+        raise ValueError(f"Unknown dataset '{dataset_name}'. Options: 'rose1', 'octa500'")
 
     print(f"Train images: {len(train_imgs)}, Train masks: {len(train_masks)}")
     print(f"Test images: {len(test_imgs)}, Test masks: {len(test_masks)}")
@@ -273,5 +282,5 @@ if __name__ == "__main__":
         batch_size=4,
         lr=1e-4,
         device=device,
-        output_dir='results/unet_svc_preprocessed'
+        output_dir=f'results/{model_name}_{dataset_name}'
     )
