@@ -124,3 +124,17 @@ def get_octa500_split(test_size=40, random_state=42):
         imgs, masks, test_size=test_size, random_state=random_state)
     return train_imgs, train_masks, test_imgs, test_masks
 
+def get_octa500_largevessel_6mm(test_size=60, random_state=42):
+    """OCTA-500 6mm, MANUAL large-vessel GT (IDs 10001-10300, 400x400).
+    Matches ARIAS field of view (~6mm). Returns train_imgs, train_masks,
+    test_imgs, test_masks."""
+    base   = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/OCTA_500")
+    proj   = base / "OCTA_6mm/Projection Maps/OCTA(ILM_OPL)"   # VERIFY folder name
+    labels = base / "Label/Label/GT_LargeVessel"                # VERIFY 10001 range exists here
+    ids    = [str(i) for i in range(10001, 10301)]
+    imgs   = [proj   / f"{i}.bmp" for i in ids]
+    masks  = [labels / f"{i}.bmp" for i in ids]
+    train_imgs, test_imgs, train_masks, test_masks = train_test_split(
+        imgs, masks, test_size=test_size, random_state=random_state)
+    return train_imgs, train_masks, test_imgs, test_masks
+
