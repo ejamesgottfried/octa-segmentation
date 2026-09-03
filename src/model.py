@@ -1,3 +1,12 @@
+"""FlexUNet: a single U-Net implementation with toggleable attention,
+residual, and squeeze-and-excitation (SE) components, so an architecture
+ablation can compare them against a byte-identical backbone.
+
+See MODEL_REGISTRY at the bottom for the named variants actually used in
+the ablation scripts, and build_model() as the single entry point that
+train.py / test_model.py call by name.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

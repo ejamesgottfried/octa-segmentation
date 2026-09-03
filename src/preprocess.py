@@ -1,27 +1,28 @@
+"""Image preprocessing: CLAHE + median filtering, run once and cached to
+disk (see preprocess_directory / the __main__ block below) so training can
+just read the already-preprocessed images instead of redoing this per epoch.
+"""
+
 import numpy as np
 import cv2
 from pathlib import Path
 
 
-
 def apply_clahe(img, clip_limit=2.0, tile_size=4):
-    """
-    Use clahe: Contrast Limited Adaptive Histogram Equalization
-    Makes subtle features more visibile
-    """
+    """Contrast Limited Adaptive Histogram Equalization: boosts local
+    contrast (per tile) rather than globally, making subtle vessel
+    structure more visible without over-amplifying noise."""
+    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(tile_size, tile_size))
+    return clahe.apply(img)
 
-    clahe = cv2.createCLAHE(clipLimit = clip_limit, tileGridSize = (tile_size, tile_size))
-    result = clahe.apply(img)
-
-    return result
 
 def apply_median_filter(img, kernel_size=3):
+    """Median blur: denoises while preserving edges, unlike a Gaussian blur."""
+    return cv2.medianBlur(img, kernel_size)
 
-    result = cv2.medianBlur(img, kernel_size)
-
-    return result
 
 def preprocess_image(img, clip_limit=2.0, tile_size=8, kernel_size=3):
+    """CLAHE followed by median filtering."""
     img = apply_clahe(img, clip_limit, tile_size)
     img = apply_median_filter(img, kernel_size)
     return img
@@ -69,9 +70,11 @@ def preprocess_directory(input_dir, output_dir, clip_limit=2.0, tile_size=8, ker
 
 
 if __name__ == "__main__":
+    # EDIT ME: point this at your own ROSE-1 copy.
     ROSE1_BASE = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/rose_dataset/ROSE-1")
-    
-    # Preprocess SVC training images
+
+    # Preprocess SVC train/test images; output feeds src/train.py's 'rose1'
+    # branch and scripts/rose1_ablation.py's "preprocessed" condition.
     for split in ["train", "test"]:
         preprocess_directory(
             input_dir=ROSE1_BASE / f"SVC/{split}/img",

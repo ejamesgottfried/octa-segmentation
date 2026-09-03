@@ -1,20 +1,29 @@
+"""PyTorch Dataset for OCTA vessel segmentation, plus dataset-specific
+train/test split and k-fold helpers for ROSE-1 and OCTA-500.
+
+Images and masks are loaded as single-channel grayscale (OCTA scans are
+already grayscale, and masks are binary vessel/background maps).
+"""
+
 import numpy as np
 import cv2
 from pathlib import Path
 from torch.utils.data import Dataset
-import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from sklearn.model_selection import train_test_split, KFold
 
 class OCTADataset(Dataset):
-    def __init__(self, img_paths, mask_paths, augment=False):
-        # store image and mask paths
-        # store augmentation flag
-        # define augmentation transforms
+    """Loads (image, mask) pairs from parallel lists of file paths.
 
-        self.img_path = img_paths
-        self.mask_path = mask_paths
+    `augment=True` applies random flips/rotation/brightness-contrast jitter
+    (for training); `augment=False` only normalizes (for val/test), so the
+    same class serves all three splits.
+    """
+
+    def __init__(self, img_paths, mask_paths, augment=False):
+        self.img_paths = img_paths
+        self.mask_paths = mask_paths
         self.augment = augment
 
 
@@ -35,11 +44,11 @@ class OCTADataset(Dataset):
         ])
 
     def __len__(self):
-        return len(self.img_path)
-    
+        return len(self.img_paths)
+
     def __getitem__(self, idx):
-        img = cv2.imread(str(self.img_path[idx]), cv2.IMREAD_GRAYSCALE)
-        mask = cv2.imread(str(self.mask_path[idx]), cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(str(self.img_paths[idx]), cv2.IMREAD_GRAYSCALE)
+        mask = cv2.imread(str(self.mask_paths[idx]), cv2.IMREAD_GRAYSCALE)
 
         if img is None or mask is None:
             raise ValueError(f"Failed to load image or mask at index {idx}")
@@ -110,10 +119,11 @@ def create_datasets(fold, test_split):
 
 def get_octa500_split(test_size=40, random_state=42):
     """
-    OCTA-500 3mm split (capillary GT). 
-    Every notebook uses the SAME held-out test set. 
+    OCTA-500 3mm split (capillary GT).
+    Every notebook uses the SAME held-out test set (fixed random_state).
     Returns four lists of Path: train_imgs, train_masks, test_imgs, test_masks
     """
+    # EDIT ME: path to your local copy of OCTA-500 (see notes.md for layout).
     base   = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/OCTA_500")
     proj   = base / "OCTA_3mm/Projection Maps/OCTA(ILM_OPL)"
     labels = base / "Label/Label/GT_Capillary"
@@ -128,6 +138,7 @@ def get_octa500_largevessel_6mm(test_size=60, random_state=42):
     """OCTA-500 6mm, MANUAL large-vessel GT (IDs 10001-10300, 400x400).
     Matches ARIAS field of view (~6mm). Returns train_imgs, train_masks,
     test_imgs, test_masks."""
+    # EDIT ME: path to your local copy of OCTA-500 (see notes.md for layout).
     base   = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/OCTA_500")
     proj   = base / "OCTA_6mm/Projection Maps/OCTA(ILM_OPL)"   # VERIFY folder name
     labels = base / "Label/Label/GT_LargeVessel"                # VERIFY 10001 range exists here

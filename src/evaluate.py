@@ -1,12 +1,17 @@
+"""Segmentation metrics for binary vessel masks.
+
+Every metric here takes `pred` (model output) and `gt` (ground truth) as
+arrays of the same shape and binarizes them internally (any nonzero pixel
+counts as "vessel"), so callers can pass raw masks without pre-processing.
+`evaluate()` bundles all of them into a single dict.
+"""
+
 import numpy as np
 from sklearn.metrics import auc, precision_recall_curve
 
-# Take in both ground truth and prediction mask as inputs
-# Flatten/binarize inputs before calculations
 
-
-# Calculate Dice and IoU, good metrics for imblanced classes
-# Dice is more commonly used I believe
+# Dice and IoU: both measure mask overlap and are standard for the class
+# imbalance in vessel segmentation (vessels are a small fraction of pixels).
 def dice(pred, gt):
     # Binarize inputs (ensure 0s and 1s)
     pred = (pred > 0).astype(np.float32)
@@ -98,35 +103,29 @@ def precision(pred, gt):
 
     return precision
 
-# Calculate Area under PR curve
+# Area under the precision-recall curve: unlike the metrics above, this uses
+# the continuous probability map (pre-thresholding), so it captures ranking
+# quality across all thresholds rather than performance at a single cutoff.
 def auprc(prob_map, gt):
-
-    gt = (gt > 0).astype(np.float32)
-    
-    # Flatten to 1D arrays
-    gt_flat = gt.flatten()
+    gt_flat = (gt > 0).astype(np.float32).flatten()
     prob_flat = prob_map.flatten()
-    
-    # Compute precision-recall curve across all thresholds
-    p, r, _ = precision_recall_curve(gt_flat, prob_flat)
-    
-    # Compute area under curve
-    return auc(r, p)
 
-# Return all metrics as dictionary
+    precisions, recalls, _ = precision_recall_curve(gt_flat, prob_flat)
+    return auc(recalls, precisions)
+
+
 def evaluate(pred, gt, prob_map=None):
     """
     Compute all segmentation metrics.
-    
+
     Args:
         pred: binary prediction mask
         gt: binary ground truth mask
-        prob_map: probability map (optional, for AUPRC)
-    
+        prob_map: probability map (optional; if given, also computes AUPRC)
+
     Returns:
         dictionary of all metrics
     """
-
     metrics = {
         'dice': dice(pred, gt),
         'iou': iou(pred, gt),
@@ -134,9 +133,8 @@ def evaluate(pred, gt, prob_map=None):
         'specificity': specificity(pred, gt),
         'precision': precision(pred, gt),
     }
-    
+
     if prob_map is not None:
-        p, r, _ = precision_recall_curve(gt.flatten(), prob_map.flatten())
-        metrics['auprc'] = auc(r, p)
-    
+        metrics['auprc'] = auprc(prob_map, gt)
+
     return metrics

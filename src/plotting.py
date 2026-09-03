@@ -1,5 +1,9 @@
+"""Plots a fold's training history (loss + validation Dice) to a PNG.
+Called once per fold by train.run_kfold.
+"""
+
 import matplotlib
-matplotlib.use('Agg')  # non-interactive backend, needed for headless Oscar batch jobs
+matplotlib.use('Agg')  # non-interactive backend, needed for headless HPC batch jobs (no display)
 import matplotlib.pyplot as plt
 
 def plot_training_curves(history, save_path="training_curve.png"):
