@@ -1,7 +1,13 @@
+"""Non-learned baseline: adaptive/Otsu thresholding + morphological cleanup.
+A reference point for how much the FlexUNet variants improve over a classical
+computer-vision pipeline with no training. Adaptive-threshold hyperparameters
+(block_size, C) are tuned per dataset via cross_validated grid search
+(cv_grid_search), then locked and applied to the held-out test set
+(evaluate_on_test) — same train/test discipline as the deep learning models.
+"""
+
 import numpy as np
 import cv2 as cv
-import matplotlib.pyplot as plt
-from pathlib import Path
 import itertools
 from sklearn.model_selection import KFold
 from evaluate import dice, evaluate

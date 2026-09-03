@@ -137,4 +137,3 @@ dependencies:
       - tqdm==4.67.3
       - typer==0.25.1
       - typing-inspection==0.4.2
-prefix: /Users/jamesgottfried/miniconda3/envs/octa-seg

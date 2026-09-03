@@ -1,0 +1,13 @@
+# Minimal, OS-agnostic dependency list (pip install -r requirements.txt).
+# For an exact, conda-solved environment instead, use environment.yml.
+numpy
+opencv-python
+pillow
+matplotlib
+scikit-learn
+scipy
+torch
+torchvision
+albumentations
+segmentation-models-pytorch
+tqdm

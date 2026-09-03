@@ -1,5 +1,11 @@
+"""Loads saved fold checkpoints (as written by train.run_kfold) and reports
+mean +/- std metrics across folds on a held-out test set.
+"""
+
 import sys
-sys.path.append('/users/egottfri/code/octa-segmentation/src')
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent))  # allow `from evaluate import ...` etc. when run directly
+
 from evaluate import evaluate
 from model import build_model
 from dataset import OCTADataset

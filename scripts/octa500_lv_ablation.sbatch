@@ -1,4 +1,8 @@
 #!/bin/bash
+# SLURM job: runs the full OCTA-500 large-vessel ablation
+# (scripts/octa500_lv_ablation.py) on one GPU.
+# EDIT ME: conda path, project directory, and mail-user below are all
+# specific to the original developer's cluster account — update them for yours.
 #SBATCH -J octa500_lv
 #SBATCH -p gpu
 #SBATCH --gres=gpu:1

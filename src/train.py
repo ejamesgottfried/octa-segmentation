@@ -1,3 +1,8 @@
+"""Loss functions and the training loop: one epoch, one fold (with early
+stopping), and a full k-fold cross-validation run (run_kfold), which is the
+function scripts/*.py call for each model/dataset combination.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +13,6 @@ from plotting import plot_training_curves
 from torch.utils.data import DataLoader
 import numpy as np
 
-# Combine Dice with BCE
 
 class DiceLoss(nn.Module):
     def __init__(self, smooth=1.0):
@@ -16,23 +20,16 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, logits, targets):
-        # Convert raw logits to probabilities with sigmoid
-        probs = torch.sigmoid(logits)
-        
-        # Flatten both to 1D so we can compute sums easily
-        probs = probs.view(-1)
+        # Convert raw logits to probabilities, then flatten to 1D so the
+        # Dice coefficient (2*intersection / (sum(probs) + sum(targets)))
+        # can be computed over all pixels at once.
+        probs = torch.sigmoid(logits).view(-1)
         targets = targets.view(-1)
-        
-        # Compute intersection and the dice coefficient
-        # intersection = sum of (probs * targets)
-        # dice = (2*intersection + smooth) / (probs.sum() + targets.sum() + smooth)
 
         intersection = (probs * targets).sum()
-
-        # Calculate Dice
         dice = (2 * intersection + self.smooth) / (probs.sum() + targets.sum() + self.smooth)
 
-        # 4. Return 1 - dice
+        # Loss, not score: minimizing this maximizes Dice.
         return 1 - dice
     
 class CombinedLoss(nn.Module):
@@ -51,7 +48,6 @@ class CombinedLoss(nn.Module):
     def forward(self, logits, targets):
         dice_loss = self.dice(logits, targets)
         bce_loss = self.bce(logits, targets)
-        # Weighted sum of the two
         return self.bce_weight * bce_loss + (1 - self.bce_weight) * dice_loss
     
 
@@ -63,25 +59,18 @@ def train_one_epoch(model, loader, loss_fn, optimizer, device):
     running_loss = 0.0
 
     for images, masks in loader:
-        # 1. Move data to GPU (or CPU)
         images = images.to(device)
         masks = masks.to(device)
 
-        # 2. Forward pass
         logits = model(images)
-
-        # 3. Compute loss
         loss = loss_fn(logits, masks)
 
-        # 4. Backward pass: clear old gradients, then compute new ones
+        # Standard PyTorch step: clear stale gradients, backprop, update weights.
         optimizer.zero_grad()
         loss.backward()
-
-        # 5. Update weights
         optimizer.step()
 
-        # 6. Track loss (.item() pulls the number out of the tensor)
-        running_loss += loss.item()
+        running_loss += loss.item()  # .item() pulls the scalar out of the tensor
 
     # Average loss across all batches
     return running_loss / len(loader)
@@ -253,7 +242,7 @@ if __name__ == "__main__":
     dataset_name = 'rose1'
 
     if dataset_name == 'rose1':
-        # Data paths (preprocessed SVC on Oscar)
+        # EDIT ME: point these at your own preprocessed output / ROSE-1 copy.
         PREP_BASE = Path("/users/egottfri/code/octa-segmentation/data/preprocessed")
         ROSE1_BASE = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/rose_dataset/ROSE-1")
 

@@ -1,4 +1,9 @@
-# Data
+# Data notes
+
+Raw working notes on dataset locations, folder layouts, and label
+conventions — kept as-is (not prose) since they're the fastest reference
+when writing a new loader. See [README.md](README.md) for the project
+overview.
 
 ## ROSE-1
 All 3mm
