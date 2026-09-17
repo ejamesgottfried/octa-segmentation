@@ -6,13 +6,13 @@ it left off. Intended to run via rose1_ablation.sbatch on a SLURM cluster,
 or directly with `python scripts/rose1_ablation.py`.
 """
 
-import os, glob, sys
+import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 
 import torch
 import cv2
-from train import run_kfold
+from train import run_variant_sweep
 
 DEVICE     = 'cuda' if torch.cuda.is_available() else 'cpu'
 N_FOLDS    = 5
@@ -49,16 +49,8 @@ print(f"counts ok; image {h}x{w}", flush=True)
 
 # Full sweep: {raw, preprocessed} x 5 model variants.
 for condition in CONDITIONS:
-    tr_imgs = IMAGES[condition]["train"]
-    te_imgs = IMAGES[condition]["test"]
-    for name in VARIANTS:
-        out_dir = RESULTS_DIR / condition / name
-        done = len(glob.glob(str(out_dir / "best_model_fold*.pth")))
-        if done >= N_FOLDS:
-            print(f"[skip]  {condition} {name} ({done} folds)", flush=True)
-            continue
-        print(f"[train] {condition} / {name}", flush=True)
-        run_kfold(tr_imgs, train_masks, te_imgs, test_masks,
-                  model_name=name, n_splits=N_FOLDS, device=DEVICE,
-                  output_dir=str(out_dir))
+    run_variant_sweep(VARIANTS, IMAGES[condition]["train"], train_masks,
+                       IMAGES[condition]["test"], test_masks,
+                       RESULTS_DIR / condition, n_splits=N_FOLDS, device=DEVICE,
+                       label=condition)
 print("all configs done", flush=True)

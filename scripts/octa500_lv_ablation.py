@@ -5,12 +5,12 @@ Intended to run via octa500_lv_ablation.sbatch on a SLURM cluster, or
 directly with `python scripts/octa500_lv_ablation.py`.
 """
 
-import os, glob, sys
+import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 
 import torch, cv2
-from train import run_kfold
+from train import run_variant_sweep
 from dataset import get_octa500_largevessel_6mm
 
 DEVICE      = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -31,11 +31,6 @@ h,w = cv2.imread(str(train_imgs[0]), cv2.IMREAD_GRAYSCALE).shape
 assert h%16==0 and w%16==0, f"{h}x{w} not divisible by 16"
 print(f"paths ok; image {h}x{w}", flush=True)
 
-for name in VARIANTS:
-    out = RESULTS_DIR / name
-    if len(glob.glob(str(out/"best_model_fold*.pth"))) >= N_FOLDS:
-        print(f"[skip]  {name}", flush=True); continue
-    print(f"[train] {name}", flush=True)
-    run_kfold(train_imgs, train_masks, test_imgs, test_masks,
-              model_name=name, n_splits=N_FOLDS, device=DEVICE, output_dir=str(out))
+run_variant_sweep(VARIANTS, train_imgs, train_masks, test_imgs, test_masks,
+                   RESULTS_DIR, n_splits=N_FOLDS, device=DEVICE)
 print("all done", flush=True)

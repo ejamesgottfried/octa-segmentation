@@ -229,6 +229,27 @@ def run_kfold(train_imgs, train_masks, test_imgs, test_masks,
     return fold_scores
 
 
+def run_variant_sweep(variants, train_imgs, train_masks, test_imgs, test_masks,
+                       results_dir, n_splits=5, device='cuda', label=""):
+    """Train every named model variant on one data config, skipping variants
+    whose n_splits fold checkpoints already exist under results_dir/<variant>.
+    Used by scripts/*_ablation.py to sweep MODEL_REGISTRY variants; `label`
+    is an optional prefix for the progress log lines (e.g. a condition name).
+    """
+    import glob
+    prefix = f"{label} " if label else ""
+    for name in variants:
+        out_dir = results_dir / name
+        done = len(glob.glob(str(out_dir / "best_model_fold*.pth")))
+        if done >= n_splits:
+            print(f"[skip]  {prefix}{name} ({done} folds)", flush=True)
+            continue
+        print(f"[train] {prefix}{name}", flush=True)
+        run_kfold(train_imgs, train_masks, test_imgs, test_masks,
+                  model_name=name, n_splits=n_splits, device=device,
+                  output_dir=str(out_dir))
+
+
 # to run:
 if __name__ == "__main__":
     from pathlib import Path
