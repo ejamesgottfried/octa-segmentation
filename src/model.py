@@ -212,3 +212,20 @@ def build_model(name, **kwargs):
     if name not in MODEL_REGISTRY:
         raise ValueError(f"Unknown model '{name}'. Options: {list(MODEL_REGISTRY)}")
     return MODEL_REGISTRY[name](**kwargs)
+
+
+def remap_legacy_state_dict(old_state_dict):
+    """Remaps checkpoints saved before the ConvBlock refactor (when each
+    encoder/decoder stage was a bare DoubleConv) onto FlexUNet's current
+    naming, where DoubleConv is nested inside ConvBlock, e.g.
+    'enc1.double_conv.0.weight' -> 'enc1.conv.double_conv.0.weight'.
+    up/final layers are unaffected and pass through unchanged.
+    """
+    new_state_dict = {}
+    for k, v in old_state_dict.items():
+        if '.double_conv.' in k and not k.startswith(('up', 'final')):
+            prefix, rest = k.split('.double_conv.', 1)
+            new_state_dict[f'{prefix}.conv.double_conv.{rest}'] = v
+        else:
+            new_state_dict[k] = v
+    return new_state_dict

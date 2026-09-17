@@ -48,7 +48,12 @@ scripts/
   octa500_lv_ablation.py    Ablation sweep: 5 FlexUNet variants on OCTA-500 6mm large-vessel GT
   *.sbatch                   SLURM job scripts that run the two ablation scripts on a GPU node
 notebooks/
-  01_explore_rose1.ipynb     Exploratory data analysis of the ROSE-1 dataset
+  datasets/       EDA for each dataset: explore_ROSE.ipynb, explore_ARIAS.ipynb, explore_OCTA-500.ipynb
+  preprocessing/  ROSE_preprocess.ipynb (run it), ROSE_preprocess_grid_search.ipynb (derives its params)
+  training/       OCTA-500_U-Net.ipynb — single-variant training on OCTA-500 capillary GT
+  evaluating/     ROSE_classical_baselines.ipynb, ROSE_pretrained_U-Net.ipynb (zero-shot transfer),
+                  rose1_ablation_eval.ipynb (scores scripts/rose1_ablation.py's 10 checkpoints)
+  figures/        figures.ipynb (final comparison figures/tables) + raw_prep.ipynb + their .png/.csv outputs
 notes.md                     Raw notes on dataset paths, folder layouts, and label conventions
 environment.yml / requirements.txt   Reproducible Python environment
 ```
@@ -171,5 +176,21 @@ Ablation results land under `results/<condition>/<model_name>/` as
 per-fold checkpoints and training curves; aggregate metrics are printed to
 stdout by `run_kfold` (mean ± std Dice across folds) and `test_model.py`
 (mean ± std across folds on the test set, for every metric in
-`evaluate.py`). Nothing is auto-aggregated into a single results table yet —
-that step is manual.
+`evaluate.py`). `notebooks/figures/figures.ipynb` aggregates these into the
+table/figures below (`notebooks/figures/summary_metrics_table.csv` is the
+machine-readable version).
+
+**ROSE-1 SVC, held-out test set** (best classical config vs. plain FlexUNet):
+
+| Metric | Classical (raw) | U-Net (raw) | Change |
+|---|---|---|---|
+| Dice | 0.6330 ± 0.0222 | 0.7741 ± 0.0018 | +0.1411 |
+| IoU | 0.4635 ± 0.0238 | 0.6341 ± 0.0023 | +0.1706 |
+| Sensitivity | 0.7045 ± 0.0561 | 0.7610 ± 0.0109 | +0.0565 |
+| Specificity | 0.8854 ± 0.0166 | 0.9545 ± 0.0032 | +0.0691 |
+| Precision | 0.5795 ± 0.0396 | 0.7926 ± 0.0094 | +0.2131 |
+| AUPRC | — | 0.8658 ± 0.0018 | — |
+
+Full per-variant (5 FlexUNet configs × raw/preprocessed) breakdown is in
+`notebooks/evaluating/rose1_ablation_eval.ipynb` and
+`results/rose1_ablation/summary.csv`.
