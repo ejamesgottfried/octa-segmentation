@@ -1,0 +1,9 @@
+Method,Preprocessing,Dice,IoU,Sensitivity,Specificity,Precision
+Global Threshold,None,0.6221,0.452,0.7104,0.8611,0.5571
+Global + Morph,None,0.6232,0.4533,0.7705,0.8291,0.5271
+Adaptive,None,0.6275,0.4576,0.6537,0.8971,0.6065
+Adaptive + Morph,None,0.6411,0.4722,0.7108,0.8783,0.5869
+Global Threshold,CLAHE + Median,0.66,0.4932,0.7505,0.8726,0.5935
+Global + Morph,CLAHE + Median,0.6563,0.4891,0.762,0.8634,0.5809
+Adaptive,CLAHE + Median,0.6776,0.513,0.6864,0.9192,0.6732
+Adaptive + Morph,CLAHE + Median,0.6787,0.5142,0.6974,0.9147,0.6649

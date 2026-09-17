@@ -1,0 +1,13 @@
+Method,Condition,Dice,IoU,Sensitivity,Specificity,Precision,AUPRC
+Classical (Adaptive + Morph),Raw,0.641,0.472,0.711,0.878,0.587,—
+Classical (Adaptive + Morph),Preprocessed,0.679,0.514,0.697,0.915,0.665,—
+U-Net,Raw,0.774,0.635,0.759,0.956,0.796,0.866
+Attention,Raw,0.773,0.633,0.763,0.953,0.789,0.865
+Residual,Raw,0.780,0.642,0.741,0.965,0.829,0.872
+SE,Raw,0.772,0.631,0.759,0.954,0.791,0.861
+Att + Res,Raw,0.780,0.642,0.743,0.964,0.826,0.871
+U-Net,Preprocessed,0.770,0.629,0.750,0.957,0.798,0.862
+Attention,Preprocessed,0.768,0.626,0.762,0.951,0.779,0.862
+Residual,Preprocessed,0.776,0.636,0.741,0.963,0.820,0.870
+SE,Preprocessed,0.767,0.625,0.765,0.950,0.775,0.860
+Att + Res,Preprocessed,0.774,0.633,0.743,0.961,0.813,0.867
