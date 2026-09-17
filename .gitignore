@@ -1,16 +1,21 @@
 # ignore data
 rose1_data/
+data/preprocessed/
 
 # ignore weights
 *.pth
 *.pt
 
-# ignore genrated images
-results/*.png
-results/*.jpg
+# ignore generated images (nested, e.g. results/<condition>/<model>/*.png)
+results/**/*.png
+results/**/*.jpg
+notebooks/results/
+
+# ignore SLURM job logs
+*.out
+*.err
 
 __pycache__/
 
 # ignore jupter notebooks autosaves
 .ipynb_checkpoints/
-
