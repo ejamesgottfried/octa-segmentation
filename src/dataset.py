@@ -123,7 +123,7 @@ def get_octa500_split(test_size=40, random_state=42):
     Every notebook uses the SAME held-out test set (fixed random_state).
     Returns four lists of Path: train_imgs, train_masks, test_imgs, test_masks
     """
-    # EDIT ME: path to your local copy of OCTA-500 (see notes.md for layout).
+    # EDIT ME: path to your local copy of OCTA-500 (see docs/notes.md for layout).
     base   = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/OCTA_500")
     proj   = base / "OCTA_3mm/Projection Maps/OCTA(ILM_OPL)"
     labels = base / "Label/Label/GT_Capillary"
@@ -138,7 +138,7 @@ def get_octa500_largevessel_6mm(test_size=60, random_state=42):
     """OCTA-500 6mm, MANUAL large-vessel GT (IDs 10001-10300, 400x400).
     Matches ARIAS field of view (~6mm). Returns train_imgs, train_masks,
     test_imgs, test_masks."""
-    # EDIT ME: path to your local copy of OCTA-500 (see notes.md for layout).
+    # EDIT ME: path to your local copy of OCTA-500 (see docs/notes.md for layout).
     base   = Path("/files22_lrsresearch/ENG_Lee-Lab_Shared/group/data/public/OCTA_500")
     proj   = base / "OCTA_6mm/Projection Maps/OCTA(ILM_OPL)"   # VERIFY folder name
     labels = base / "Label/Label/GT_LargeVessel"                # VERIFY 10001 range exists here

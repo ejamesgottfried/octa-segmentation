@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./private/arias_subjects_deid.csv)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git branch *)",
+      "Bash(python -m pytest *)",
+      "Bash(python .claude/skills/stats-compare/scripts/paired_compare.py *)",
+      "Bash(ruff *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(pip install *)",
+      "Bash(conda *)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf *)",
+      "Read(//oscar/data/jlee123/**)",
+      "Read(**/22-retina-arias*/**)",
+      "Read(**/arias_raw/**)",
+      "Read(./.env)",
+      "Read(./private/raw/**)",
+      "Read(./private/*raw*)",
+      "Bash(git add -f *)",
+      "Bash(git add --force *)"
+    ]
+  }
+}

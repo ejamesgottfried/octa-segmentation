@@ -1,6 +1,12 @@
 # ignore data
 rose1_data/
 data/preprocessed/
+# NOTE: data/preprocessed/SVC/ was committed before this rule existed, so it is still
+# tracked. Do not `git rm` it without backing it up on Oscar first (a pull would delete it).
+
+# private, never committed (de-identified ARIAS tables live here)
+private/*
+!private/README.md
 
 # ignore weights
 *.pth
@@ -9,13 +15,23 @@ data/preprocessed/
 # ignore generated images (nested, e.g. results/<condition>/<model>/*.png)
 results/**/*.png
 results/**/*.jpg
+results/**/*.csv
 notebooks/results/
 
-# ignore SLURM job logs
+# SLURM job logs (logs/ itself is kept so sbatch -o logs/... works after a fresh pull)
 *.out
 *.err
+logs/*
+!logs/.gitkeep
 
+# Python / Jupyter
 __pycache__/
-
-# ignore jupter notebooks autosaves
 .ipynb_checkpoints/
+.pytest_cache/
+
+# Claude Code personal files
+CLAUDE.local.md
+.claude/settings.local.json
+
+# macOS
+.DS_Store
